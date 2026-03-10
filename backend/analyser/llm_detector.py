@@ -1,5 +1,5 @@
 import re
-import requests  # for the api call
+import requests # for the api call
 import os
 from dotenv import load_dotenv
 load_dotenv()
