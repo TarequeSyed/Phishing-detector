@@ -1,8 +1,10 @@
+import re
 import requests  # for the api call
 import os
 from dotenv import load_dotenv
 load_dotenv()
 HF_TOKEN = os.getenv("HF_API_KEY")
+
 
 # For Strict structured output function: 
 def build_prompts(email_text, urls):
@@ -64,3 +66,24 @@ def query_llm(prompt):
 
     return text
 
+def parse_risk_score(text):
+    match = re.search(r"Risk Score:\s*(\d+)", text)
+
+    if match:
+        return int(match.group(1))
+    return 0
+
+# Combining all three functions: 
+
+def llm_score(email_text, urls):
+
+    # it will build the prompt:
+    prompt = build_prompts(email_text, urls)
+
+    # now, we will send the prompt to llms:
+    response_text = query_llm(prompt)
+
+    # we will extract the risk score:
+    score = parse_risk_score(response_text)
+
+    return score, response_text
