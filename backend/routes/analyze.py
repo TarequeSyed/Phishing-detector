@@ -10,8 +10,8 @@ analyze_bp = Blueprint("analyze", __name__)
 
 @analyze_bp.route("/analyze", methods=["POST"])
 def analyze_email():
-    data = request.json
-    email_text = data.get("email")
+    data = request.get_json()
+    email_text = data["email"]
 
     #1: extract urls:
     urls = extract_urls(email_text)
