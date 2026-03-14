@@ -10,7 +10,7 @@ def heuristic_score(email_text):
     """
 
     suspicious_keywords = [
-         "urgent",
+        "urgent",
         "verify your account",
         "password",
         "bank",
