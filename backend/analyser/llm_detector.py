@@ -67,8 +67,7 @@ def query_llm(prompt):
     return text
 
 def parse_risk_score(text):
-    match = re.search(r"Risk Score:\s*(\d+)", text)
-
+    match = re.search(r"Risk\s*score\s*:\s*(\d+)", text, re.IGNORECASE)
     if match:
         return int(match.group(1))
     return 0

@@ -1,48 +1,54 @@
 import ipaddress
 from urllib.parse import urlparse
 
+
 def url_risk_score(urls):
     """
-    Analyse URLs for Phishing indicators
+    Analyse URLs for phishing indicators
     """
 
-    suspicious_shortners = [
+    suspicious_shorteners = [
         "bit.ly",
         "tinyurl.com",
         "t.co",
         "goo.gl",
-        "ow.ly"
+        "rebrand.ly",
+        "buff.ly"
     ]
 
     score = 0
     detected_issues = []
 
     for url in urls:
+
         parsed = urlparse(url)
         domain = parsed.hostname
-        # it will check for shortner link: 
-        for shortner in suspicious_shortners:
-            if shortner in urls:
-                score += 25
-                detected_issues.append(f"shortened URL: {url}")
 
-        # for '@' symbol:
+        if not domain:
+            continue
+
+        # ---- Shortened URL detection ----
+        for shortener in suspicious_shorteners:
+            if shortener in domain:
+                score += 25
+                detected_issues.append(f"Shortened URL detected: {url}")
+                break
+
+        # ---- '@' symbol in URL ----
         if "@" in url:
             score += 20
-            detected_issues.append(f"Suspicious '@' in url: {url}")
+            detected_issues.append(f"Suspicious '@' in URL: {url}")
 
-        # for ip based domain:
+        # ---- IP address based URL ----
         try:
             ip = ipaddress.ip_address(domain)
 
-            if ip.is_private:
-                # it is local network, then ignore
-                pass
-            else:
+            if not ip.is_private:
                 score += 30
-                detected_issues.append(f"Public IP URL: {url}")
-        except:
-            # it is not a IP address
+                detected_issues.append(f"Public IP URL detected: {url}")
+
+        except ValueError:
+            # Not an IP address
             pass
 
     return score, detected_issues

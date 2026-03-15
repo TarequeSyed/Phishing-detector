@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Phishing Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #07080d;
+      --panel:      #0d0f17;
+      --panel2:     #12141f;
+      --border:     rgba(255,255,255,0.07);
+      --border-hi:  rgba(255,255,255,0.13);
+      --text:       #e8e6f0;
+      --muted:      #6b6a80;
+      --dim:        #32303f;
+      --red:        #ff4d4d;
+      --red-soft:   rgba(255,77,77,0.12);
+      --amber:      #f59e0b;
+      --amber-soft: rgba(245,158,11,0.12);
+      --green:      #34d399;
+      --blue:       #60a5fa;
+      --blue-soft:  rgba(96,165,250,0.1);
+      --font-ui:   'Syne', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+
+    body {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 48px 20px 64px; position: relative; overflow-x: hidden;
+    }
+
+    body::before {
+      content: ''; position: fixed; top: -120px; left: 50%;
+      transform: translateX(-50%); width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(96,165,250,0.07) 0%, transparent 65%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px);
+      pointer-events: none; z-index: 0;
+    }
+
+    .header {
+      width: 100%; max-width: 660px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 44px; position: relative; z-index: 1;
+    }
+
+    .header-brand { display: flex; align-items: center; gap: 10px; }
+
+    .header-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--blue-soft); border: 1px solid rgba(96,165,250,0.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .header-title { font-size: 1rem; font-weight: 600; letter-spacing: 0.02em; }
+
+    .header-pill {
+      font-family: var(--font-mono); font-size: 0.62rem;
+      letter-spacing: 0.1em; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.9rem); font-weight: 700;
+      letter-spacing: -0.04em; line-height: 1.05; text-align: center;
+      margin-bottom: 14px; position: relative; z-index: 1;
+    }
+
+    h1 .accent {
+      background: linear-gradient(90deg, var(--blue) 0%, #a78bfa 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 0.88rem; color: var(--muted); text-align: center;
+      margin-bottom: 40px; line-height: 1.6; max-width: 380px;
+      position: relative; z-index: 1;
+    }
+
+    .wrapper { width: 100%; max-width: 660px; position: relative; z-index: 1; }
+
+    .wrapper::before {
+      content: ''; position: absolute; inset: -1px; border-radius: 21px;
+      background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(167,139,250,0.08), transparent 60%);
+      z-index: 0; pointer-events: none;
+    }
+
+    .card {
+      position: relative; z-index: 1;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+    }
+
+    .card-topbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      background: var(--panel2);
+    }
+
+    .td { width: 10px; height: 10px; border-radius: 50%; }
+    .td-r { background: #ff5f57; }
+    .td-y { background: #febc2e; }
+    .td-g { background: #28c840; }
+
+    .card-topbar-label {
+      margin-left: auto; font-family: var(--font-mono);
+      font-size: 0.65rem; color: var(--dim); letter-spacing: 0.06em;
+    }
+
+    textarea#emailInput {
+      display: block; width: 100%; min-height: 220px;
+      background: transparent; border: none; outline: none;
+      padding: 20px 22px; color: var(--text);
+      font-family: var(--font-mono); font-size: 0.8rem;
+      line-height: 1.9; letter-spacing: 0.01em; resize: vertical;
+    }
+
+    textarea#emailInput::placeholder { color: var(--dim); }
+
+    .card-bottombar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-top: 1px solid var(--border);
+      background: var(--panel2); gap: 12px;
+    }
+
+    .threat-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .tag {
+      font-family: var(--font-mono); font-size: 0.6rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 5px; border: 1px solid;
+    }
+
+    .tag-red   { color: var(--red);   border-color: rgba(255,77,77,0.3);   background: var(--red-soft); }
+    .tag-amber { color: var(--amber); border-color: rgba(245,158,11,0.3); background: var(--amber-soft); }
+    .tag-blue  { color: var(--blue);  border-color: rgba(96,165,250,0.3);  background: var(--blue-soft); }
+
+    button[onclick="analyzeEmail()"] {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--blue); color: #060810;
+      border: none; border-radius: 10px; padding: 10px 22px;
+      font-family: var(--font-ui); font-size: 0.82rem;
+      font-weight: 600; letter-spacing: 0.03em; cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 20px rgba(96,165,250,0.25); white-space: nowrap; flex-shrink: 0;
+    }
+
+    button[onclick="analyzeEmail()"]:hover { background: #93c5fd; box-shadow: 0 0 28px rgba(96,165,250,0.4); }
+    button[onclick="analyzeEmail()"]:active { transform: scale(0.96); }
+
+    .divider {
+      display: flex; align-items: center; gap: 14px;
+      margin: 28px 0; color: var(--dim);
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em;
+    }
+
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    #result {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+    }
+
+    #result.hidden { display: none; }
+
+    .result-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      background: var(--panel2); display: flex; align-items: center; gap: 8px;
+    }
+
+    .result-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--blue); box-shadow: 0 0 6px var(--blue);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    .result-header h2 {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    }
+
+    .scores-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+    }
+
+    .score-block {
+      padding: 22px 20px; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+
+    .score-block:last-child { border-right: none; }
+
+    .score-block-label {
+      font-family: var(--font-mono); font-size: 0.58rem;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+    }
+
+    .score-block-value {
+      font-family: var(--font-mono); font-size: 1.6rem;
+      font-weight: 500; line-height: 1; color: var(--text);
+    }
+
+    #finalScore {
+      background: linear-gradient(90deg, var(--blue), #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; font-size: 1.9rem; font-weight: 700;
+    }
+
+    #heuristicScore { color: var(--amber); }
+    #urlScore       { color: var(--red); }
+    #llmScore       { color: var(--green); }
+
+    .analysis-section { padding: 20px; border-top: 1px solid var(--border); margin-left: 15px;}
+
+    .analysis-label {
+      font-family: var(--font-mono); font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+
+    .analysis-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    #llmAnalysis {
+      font-size: 0.85rem; line-height: 1.8; color: #9a99ba;
+      font-family: var(--font-mono);
+    }
+
+    .footer {
+      margin-top: 48px; font-family: var(--font-mono);
+      font-size: 0.65rem; color: var(--dim); letter-spacing: 0.08em;
+      display: flex; gap: 20px; position: relative; z-index: 1;
+    }
+
+    .footer span::before { content: '// '; color: var(--border-hi); }
+
+    @media (max-width: 540px) {
+      .scores-row { grid-template-columns: repeat(2, 1fr); }
+      .score-block { border-bottom: 1px solid var(--border); }
+      .threat-tags { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 1.5L15.5 5.25V12.75L9 16.5L2.5 12.75V5.25L9 1.5Z" stroke="#60a5fa" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M9 6V9.5" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="9" cy="12" r="0.9" fill="#60a5fa"/>
+        </svg>
+      </div>
+      <span class="header-title">AI Phishing Detector</span>
+    </div>
+    <span class="header-pill">threat-intel · v2.0</span>
+  </div>
+
+  <h1>Detect <span class="accent">phishing</span><br/>before it's too late.</h1>
+  <p class="subtitle">Paste any suspicious email. Our AI cross-checks heuristics, URL patterns, and semantic signals instantly.</p>
+
+  <div class="wrapper">
+
+    <div class="card">
+      <div class="card-topbar">
+        <div class="td td-r"></div>
+        <div class="td td-y"></div>
+        <div class="td td-g"></div>
+      </div>
+
+      <textarea
+        id="emailInput"
+        placeholder="Paste suspicious email here..."
+      ></textarea>
+
+      <div class="card-bottombar">
+        <div class="threat-tags">
+          <span class="tag tag-red">Spoofing</span>
+          <span class="tag tag-amber">Urgency</span>
+          <span class="tag tag-blue">URL risk</span>
+        </div>
+        <button onclick="analyzeEmail()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Analyze Email
+        </button>
+      </div>
+    </div>
+
+    <div class="divider">analysis result</div>
+
+    <div id="result" class="hidden">
+      <div class="result-header">
+        <div class="result-dot"></div>
+        <h2>Analysis Result</h2>
+      </div>
+
+      <div class="scores-row">
+        <div class="score-block">
+          <span class="score-block-label">Final Score</span>
+          <span class="score-block-value" id="finalScore">—</span>
+        </div>
+        <div class="score-block">
+          <span class="score-block-label">Heuristic</span>
+          <span class="score-block-value" id="heuristicScore">—</span>
+        </div>
+        <div class="score-block">
+          <span class="score-block-label">URL Score</span>
+          <span class="score-block-value" id="urlScore">—</span>
+        </div>
+        <div class="score-block">
+          <span class="score-block-label">LLM Score</span>
+          <span class="score-block-value" id="llmScore">—</span>
+        </div>
+      </div>
+
+      <div class="analysis-section">
+        <div class="analysis-label">LLM Analysis</div>
+        <div id="llmAnalysis"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span id="year">2025</span>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

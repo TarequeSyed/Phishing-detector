@@ -2,6 +2,7 @@ from flask import Flask
 from routes.analyze import analyze_bp
 from models.scan import Scan
 from database import db
+from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
@@ -11,7 +12,14 @@ def create_app():
 
     db.init_app(app)
 
+    CORS(app)
+
     from routes.analyze import analyze_bp
     app.register_blueprint(analyze_bp)
 
     return app
+
+
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True)
